@@ -2384,6 +2384,54 @@ FAIL: server did not start within 180s</div>
 </section>
 
 
+<!-- ─── STATUS: 31B ────────────────────────────────────────────────── -->
+<section data-screen-label="Status · 31B">
+  <h2><span class="num">§9½</span>Status: the larger dense sibling, and the one the author stalled on</h2>
+  <p class="dek">
+    The 31B-dense is the model RYS's own author estimated at ~40 H100-hours and
+    never got around to. The tooling here is no longer the blocker — the
+    per-layer-array fix loads a coherent <span class="mono">dup_2</span> 31B that
+    computed a 13-digit product correctly under chain-of-thought, at ~5.7 tok/s on
+    the Mac Mini. The full sweep is <em>parked</em>, not abandoned — on two
+    questions, both now close enough to resolved to run it.
+  </p>
+
+  <p style="margin:0 0 1.6rem"><span class="status-badge">Parked — clearing to run</span></p>
+
+  <div class="col-2">
+    <div>
+      <h3>Q1 · Is IQ2_XXS too noisy to trust?</h3>
+      <p>
+        At 2-bit, quantization <em>is</em> injected noise — and noise compounds
+        with depth, so the worry is specifically the <em>later</em> layers, where
+        a 2-bit error budget accumulates into something that may not reflect a
+        proper-precision model. Partly mitigated by the quant's mixed precision
+        (the load-bearing tensors are kept higher-bit), but not fully.
+        <span class="hl-acc">Mostly resolved:</span> it's what runs on 16&nbsp;GB,
+        so run it — but treat late-layer findings as quant-suspect and flag them
+        for higher-quant replication.
+      </p>
+    </div>
+    <div>
+      <h3>Q2 · Pivot from the IT model to the base?</h3>
+      <p>
+        The instruction-tuned 31B is a <em>thinking</em> model: under forced
+        no-chain-of-thought completion it keeps fighting to reason out loud and
+        scores worse for it (the same commitment-collapse the MoE showed). The fix
+        is to sweep the <em>base</em> model instead — pending a quick base-vs-IT
+        comparo to rule out a glaring methodology issue. The genuine unknown is
+        whether RYS layer-edits found on the base <em>carry over</em> to the IT
+        model. Early evidence says probably yes: the base-vs-IT per-layer
+        cosine/delta scan is <span class="hl-acc">dramatically closer</span> than
+        the IT-2-bit-vs-IT-4-bit scan — i.e. tuning moves the layers less than
+        quantization does. Unconfirmed, which is exactly what makes it worth
+        testing.
+      </p>
+    </div>
+  </div>
+</section>
+
+
 <!-- ─── METHOD + REFS ──────────────────────────────────────────────── -->
 <section data-screen-label="11 Method &amp; refs">
   <div class="refs">
