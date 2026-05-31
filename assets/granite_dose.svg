@@ -1,0 +1,79 @@
+<svg viewBox="0 0 940 500" xmlns="http://www.w3.org/2000/svg" role="img">
+<rect x="0" y="0" width="940" height="500" fill="#F6F2E9"/>
+<text x="64.0" y="28.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="13" fill="#221E18" text-anchor="start" font-weight="600" font-style="normal" letter-spacing="0.12em">DOSE–RESPONSE: HOW MANY COPIES?</text>
+<text x="64.0" y="46.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#7C7466" text-anchor="start" font-weight="400" font-style="normal">stacking N copies of one EQ-winner layer — EQ score vs copy count</text>
+<rect x="50.0" y="64" width="135.0" height="372" fill="#5C7A66" opacity="0.06"/>
+<rect x="306.0" y="64" width="494.0" height="372" fill="#7A2E2E" opacity="0.06"/>
+<text x="124.5" y="78.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9.5" fill="#5C7A66" text-anchor="middle" font-weight="400" font-style="italic">therapeutic</text>
+<text x="548.0" y="78.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9.5" fill="#7A2E2E" text-anchor="middle" font-weight="400" font-style="italic">overdose → collapse</text>
+<line x1="64" y1="436.0" x2="790" y2="436.0" stroke="#C7BDA9" stroke-width="0.6"/>
+<text x="56.0" y="439.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#7C7466" text-anchor="end" font-weight="400" font-style="normal">0.0</text>
+<line x1="64" y1="343.0" x2="790" y2="343.0" stroke="#C7BDA9" stroke-width="0.6"/>
+<text x="56.0" y="346.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#7C7466" text-anchor="end" font-weight="400" font-style="normal">0.2</text>
+<line x1="64" y1="250.0" x2="790" y2="250.0" stroke="#C7BDA9" stroke-width="0.6"/>
+<text x="56.0" y="253.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#7C7466" text-anchor="end" font-weight="400" font-style="normal">0.4</text>
+<line x1="64" y1="157.0" x2="790" y2="157.0" stroke="#C7BDA9" stroke-width="0.6"/>
+<text x="56.0" y="160.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#7C7466" text-anchor="end" font-weight="400" font-style="normal">0.6</text>
+<line x1="64" y1="64.0" x2="790" y2="64.0" stroke="#C7BDA9" stroke-width="0.6"/>
+<text x="56.0" y="67.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#7C7466" text-anchor="end" font-weight="400" font-style="normal">0.8</text>
+<text x="56.0" y="54.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9.5" fill="#7C7466" text-anchor="end" font-weight="400" font-style="normal">EQ</text>
+<line x1="64" y1="351.9" x2="790" y2="351.9" stroke="#221E18" stroke-width="0.8" stroke-dasharray="4 3"/>
+<text x="796.0" y="354.9" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" fill="#7C7466" text-anchor="start" font-weight="400" font-style="normal">baseline 0.18</text>
+<line x1="64.0" y1="64" x2="64.0" y2="436" stroke="#C7BDA9" stroke-width="0.4" stroke-dasharray="1 4"/>
+<text x="64.0" y="454.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#221E18" text-anchor="middle" font-weight="600" font-style="normal">×2</text>
+<line x1="185.0" y1="64" x2="185.0" y2="436" stroke="#C7BDA9" stroke-width="0.4" stroke-dasharray="1 4"/>
+<text x="185.0" y="454.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#221E18" text-anchor="middle" font-weight="600" font-style="normal">×3</text>
+<line x1="306.0" y1="64" x2="306.0" y2="436" stroke="#C7BDA9" stroke-width="0.4" stroke-dasharray="1 4"/>
+<text x="306.0" y="454.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#221E18" text-anchor="middle" font-weight="600" font-style="normal">×4</text>
+<line x1="427.0" y1="64" x2="427.0" y2="436" stroke="#C7BDA9" stroke-width="0.4" stroke-dasharray="1 4"/>
+<text x="427.0" y="454.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#221E18" text-anchor="middle" font-weight="600" font-style="normal">×5</text>
+<line x1="548.0" y1="64" x2="548.0" y2="436" stroke="#C7BDA9" stroke-width="0.4" stroke-dasharray="1 4"/>
+<text x="548.0" y="454.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#221E18" text-anchor="middle" font-weight="600" font-style="normal">×6</text>
+<line x1="790.0" y1="64" x2="790.0" y2="436" stroke="#C7BDA9" stroke-width="0.4" stroke-dasharray="1 4"/>
+<text x="790.0" y="454.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#221E18" text-anchor="middle" font-weight="600" font-style="normal">×8</text>
+<text x="427.0" y="478.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="10" fill="#7C7466" text-anchor="middle" font-weight="400" font-style="normal">number of copies of the layer (×2 = one extra / a single dup)</text>
+<path d="M64.0,189.0 L185.0,436.0 L306.0,436.0 L427.0,436.0" fill="none" stroke="#A6852E" stroke-width="2.2" opacity="0.9"/>
+<circle cx="64.0" cy="189.0" r="3.2" fill="#A6852E"/>
+<circle cx="185.0" cy="436.0" r="3.2" fill="#A6852E"/>
+<circle cx="306.0" cy="436.0" r="3.2" fill="#A6852E"/>
+<circle cx="427.0" cy="436.0" r="3.2" fill="#A6852E"/>
+<path d="M64.0,87.5 L185.0,436.0 L306.0,436.0 L427.0,436.0 L548.0,436.0 L790.0,436.0" fill="none" stroke="#5C7A66" stroke-width="2.2" opacity="0.9"/>
+<circle cx="64.0" cy="87.5" r="3.2" fill="#5C7A66"/>
+<circle cx="185.0" cy="436.0" r="3.2" fill="#5C7A66"/>
+<circle cx="306.0" cy="436.0" r="3.2" fill="#5C7A66"/>
+<circle cx="427.0" cy="436.0" r="3.2" fill="#5C7A66"/>
+<circle cx="548.0" cy="436.0" r="3.2" fill="#5C7A66"/>
+<circle cx="790.0" cy="436.0" r="3.2" fill="#5C7A66"/>
+<path d="M64.0,153.2 L185.0,310.5 L306.0,429.6 L427.0,436.0 L548.0,436.0 L790.0,436.0" fill="none" stroke="#B85C3D" stroke-width="2.2" opacity="0.9"/>
+<circle cx="64.0" cy="153.2" r="3.2" fill="#B85C3D"/>
+<circle cx="185.0" cy="310.5" r="3.2" fill="#B85C3D"/>
+<circle cx="306.0" cy="429.6" r="3.2" fill="#B85C3D"/>
+<circle cx="427.0" cy="436.0" r="3.2" fill="#B85C3D"/>
+<circle cx="548.0" cy="436.0" r="3.2" fill="#B85C3D"/>
+<circle cx="790.0" cy="436.0" r="3.2" fill="#B85C3D"/>
+<path d="M64.0,214.0 L185.0,143.6 L306.0,436.0 L427.0,436.0" fill="none" stroke="#2F3F52" stroke-width="2.2" opacity="0.9"/>
+<circle cx="64.0" cy="214.0" r="3.2" fill="#2F3F52"/>
+<circle cx="185.0" cy="143.6" r="3.2" fill="#2F3F52"/>
+<circle cx="306.0" cy="436.0" r="3.2" fill="#2F3F52"/>
+<circle cx="427.0" cy="436.0" r="3.2" fill="#2F3F52"/>
+<path d="M64.0,222.1 L185.0,388.6 L306.0,436.0 L427.0,436.0" fill="none" stroke="#7A2E2E" stroke-width="2.2" opacity="0.9"/>
+<circle cx="64.0" cy="222.1" r="3.2" fill="#7A2E2E"/>
+<circle cx="185.0" cy="388.6" r="3.2" fill="#7A2E2E"/>
+<circle cx="306.0" cy="436.0" r="3.2" fill="#7A2E2E"/>
+<circle cx="427.0" cy="436.0" r="3.2" fill="#7A2E2E"/>
+<path d="M64.0,108.2 L185.0,212.2 L306.0,436.0 L427.0,436.0 L548.0,436.0 L790.0,436.0" fill="none" stroke="#9A6BA0" stroke-width="2.2" opacity="0.9"/>
+<circle cx="64.0" cy="108.2" r="3.2" fill="#9A6BA0"/>
+<circle cx="185.0" cy="212.2" r="3.2" fill="#9A6BA0"/>
+<circle cx="306.0" cy="436.0" r="3.2" fill="#9A6BA0"/>
+<circle cx="427.0" cy="436.0" r="3.2" fill="#9A6BA0"/>
+<circle cx="548.0" cy="436.0" r="3.2" fill="#9A6BA0"/>
+<circle cx="790.0" cy="436.0" r="3.2" fill="#9A6BA0"/>
+<text x="800.0" y="90.5" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#5C7A66" text-anchor="start" font-weight="600" font-style="normal">L10  0.75</text>
+<text x="800.0" y="111.2" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#9A6BA0" text-anchor="start" font-weight="600" font-style="normal">L38  0.70</text>
+<text x="800.0" y="156.2" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#B85C3D" text-anchor="start" font-weight="600" font-style="normal">L17  0.61</text>
+<text x="800.0" y="192.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#A6852E" text-anchor="start" font-weight="600" font-style="normal">L5  0.53</text>
+<text x="800.0" y="217.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#2F3F52" text-anchor="start" font-weight="600" font-style="normal">L24  0.48</text>
+<text x="800.0" y="232.0" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="11" fill="#7A2E2E" text-anchor="start" font-weight="600" font-style="normal">L33  0.46</text>
+<circle cx="185.0" cy="143.6" r="6" fill="none" stroke="#2F3F52" stroke-width="1.4"/>
+<text x="195.0" y="135.6" font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9.5" fill="#2F3F52" text-anchor="start" font-weight="400" font-style="italic">L24: ×3 beats ×2</text>
+</svg>
