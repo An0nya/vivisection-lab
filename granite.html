@@ -718,38 +718,45 @@
   </div>
 
   <div class="marginalia" style="margin-top:48px">
-    <div class="label">Running now</div>
+    <div class="label">Postscript — the damping round, complete</div>
     <div class="body">
       <p>
-        <span class="status-badge">Sweep in progress</span>
+        The second-order round finished all 469 configs, including the part the
+        dose-response made urgent: <em>damping</em> — sub-dividing that one fatal
+        extra Euler step into a fraction α. The answer is the most useful result
+        of the round, and it's selective.
       </p>
       <p>
-        As of this writing the second-order round is still grinding — past the
-        pairwise combos, through the multi-layer combos and the interference
-        multi-prune, and into the damping rounds (the last ~30 of 469 configs).
-        The dose-response and the block + combo maps above are final; the three
-        rounds below are landing as the run finishes, and their verdicts will be
-        appended here. The per-cell results file is append-safe, so nothing
-        recomputes. Early peeks from the live data already rhyme with the
-        dose-response: the all-winners "kitchen-sink" combo
-        (<span class="mono">combo_5_9_…_38</span>) <em>degrades</em> — eq 0.52,
-        mc 0.52 — the surgery budget saturating exactly as predicted.
+        <span class="wbhead">Damping buys back the MC cost.</span> For the layers
+        whose full copy carried a retrieval cost, a damped copy keeps the EQ gain
+        and <em>restores MC toward 1.0</em>: <span class="mono">damp_33_a0.5</span>
+        lifts EQ to 0.49 — above the full <span class="mono">dup_33</span>'s 0.46 —
+        while pulling MC from 0.56 back to 0.94, and <span class="mono">damp_5_a0.5</span>
+        beats full <span class="mono">dup_5</span> on <em>both</em> axes (EQ 0.59
+        vs 0.53, MC 1.00 vs 0.88). Damping is a precision tool that turns an
+        EQ-<em>specialist</em> toward a generalist. For layers already clean
+        (L10, L17) it only dilutes the gain — no benefit there.
       </p>
       <p>
-        <span class="wbhead">Damping.</span> The dose-response makes this urgent:
-        does a <em>damped</em> second copy of a clean winner (L10 at α≈0.5) push EQ
-        past the ×2 ceiling without triggering the ×3 collapse — is the therapeutic
-        window wider in α than in integer copies? And is the L6 bottleneck survivable
-        under a gentle touch? (An ad-hoc hint says maybe: <span class="mono">damp_6_a0.5</span>
-        held MC where any full touch killed it.)
+        <span class="wbhead">It is collapse-proof.</span> Where a second
+        <em>full</em> copy kills the model (<span class="mono">dose_10_x3</span> →
+        EQ 0), a damped second copy stays alive (<span class="mono">damp_10_a0.5</span>
+        → EQ 0.65). The decaying-α "ODE" stacks confirm the vivisection's thesis:
+        what matters is the total integration distance Σα, not the copy count —
+        Σα≈0.75 survives, Σα≥1.5 collapses. And the <span class="mono">L6</span>
+        retrieval bottleneck, which <em>any</em> full touch obliterated, survives a
+        gentle one: <span class="mono">damp_6_a0.1</span> holds MC at a perfect 1.000.
       </p>
       <p>
-        <span class="wbhead">Interference multi-prune</span> — do the rescue-prune
-        layers (L14/15/23/32) compound when removed together? <span class="wbhead">Rescue reshapes</span> —
-        dup all clean winners + prune all interference in one edit (the dose-response
-        says the surgery budget will saturate fast). <span class="wbhead">8-bit replication</span>
-        of the champions — the crater boundaries should move an octave; the booster
-        zones should not.
+        <span class="wbhead">Pruning never compounds cleanly.</span> Removing the
+        interference layers together doesn't add up — pairs containing L23 collapse
+        EQ to zero, and every multi-prune dents MC. The "rescue" reshapes (dup the
+        winners + prune the interference) all pay in retrieval; the all-in
+        kitchen-sink collapses outright. The clean wins stay exactly what they were:
+        pure cross-depth dup-combos like <span class="mono">combo_10_38</span>.
+        Pruning is never free in combination. <span class="wbhead">Still open:</span>
+        an 8-bit replication — the crater boundaries should move ~an octave, the
+        booster zones should not.
       </p>
     </div>
   </div>
