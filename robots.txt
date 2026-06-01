@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://an0nya.github.io/vivisection-lab/sitemap.xml
