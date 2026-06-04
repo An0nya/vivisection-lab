@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gemma 4 31B — the model that wouldn't break — The Vivisection Lab</title>
+<meta name="description" content="A 176-config dup/prune layer sweep of Gemma-4-31B-dense at IQ2_M on a 16GB Mac. The finding isn't a winner — it's a structural one: this model is robust to single-layer surgery but positionally rigid, craters super-additively under blocks, and carries its noise at the front, not the back.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/lab.css">
+</head>
+<body class="dark">
+
+<nav class="labnav">
+  <a class="home" href="index.html">THE VIVISECTION LAB</a>
+  <a href="gemma.html">Gemma&nbsp;4</a>
+  <a href="gemma31b.html" class="active">Gemma&nbsp;31B</a>
+  <a href="granite.html">Granite</a>
+  <a href="hrm.html">HRM</a>
+  <a href="geometry.html">Geometry</a>
+  <span class="spacer"></span>
+  <button class="theme-btn" type="button">☼ Light</button>
+</nav>
+
+<main>
+
+<section class="hero">
+  <div class="topbar">
+    <div><span class="dot"></span>Specimen 03 · Gemma-4-31B-dense · base · IQ2_M</div>
+    <div class="right">60 layers · 176 configs · ~32 GPU-hours · 16&nbsp;GB&nbsp;Mac</div>
+  </div>
+
+  <div class="kicker" style="margin-top:2.4rem">A negative result, dissected</div>
+  <h1>The model that<br><em>wouldn't break</em>.</h1>
+  <p class="dek">
+    Every other specimen in this lab gave up a winning surgery — a layer you
+    could duplicate for a real gain. Gemma-4&#8209;31B gave up nothing. But
+    "nothing" turned out to have a shape: this model is robust to a single cut
+    and <em>rigid</em> under a structural one, and that contrast is the finding.
+  </p>
+
+  <div class="stats-strip">
+    <div class="stat"><span class="num">60</span><span class="label">Dense layers<br>[5 sliding + 1 global] × 10</span></div>
+    <div class="stat"><span class="num">176</span><span class="label">Configs swept<br>dup · prune · block · combo</span></div>
+    <div class="stat"><span class="num">0</span><span class="label">Real winners<br>top math gains vanish cross-channel</span></div>
+    <div class="stat"><span class="num">×<small>depth</small></span><span class="label">Block damage law<br>span × depth, floored</span></div>
+    <div class="stat"><span class="num">front</span><span class="label">Where the noise lives<br>not the back</span></div>
+  </div>
+
+  <div class="marginalia">
+    <div class="label">The patient</div>
+    <div class="body">
+      <p>
+        <span class="mono">gemma-4-31B</span> (dense) — the prestige target of the
+        Gemma line: sixty blocks in a <span class="mono">[5 sliding + 1 global]×10</span>
+        rhythm, no mixture-of-experts, no shared-KV anchor. Reputationally a
+        conversational / creative model — a spiritual successor to the warm,
+        fluent GPT-4o register — which, as it turns out, is exactly the problem
+        with testing it on arithmetic. Hold that thought; it's <a href="#scope">§6</a>.
+      </p>
+      <p>
+        Run on consumer hardware: the <span class="mono">base</span> checkpoint
+        (not instruction-tuned — that choice is load-bearing, see <a href="#muzzle">§6</a>)
+        at <span class="mono">IQ2_M</span>, the heaviest quant that fits a 16&nbsp;GB
+        Mac. The sweep is a frankenstein factory: rebuild the GGUF with layers
+        duplicated or deleted, reload, re-measure. No training, ever.
+      </p>
+
+      <div class="specbox">
+        <div class="speccol">
+          <div class="spechead">Architecture</div>
+          <dl>
+            <dt>Layers</dt><dd class="mono">60 · dense</dd>
+            <dt>Rhythm</dt><dd class="mono">5 SWA : 1 global</dd>
+            <dt>Globals</dt><dd class="mono">L5,11,…,59</dd>
+            <dt>Attn</dt><dd class="mono">use_alt (V=K)</dd>
+            <dt>Anchor</dt><dd class="mono">none</dd>
+          </dl>
+        </div>
+        <div class="speccol">
+          <div class="spechead">Rig</div>
+          <dl>
+            <dt>Engine</dt><dd>llama-server</dd>
+            <dt>Quant</dt><dd class="mono">IQ2_M (base)</dd>
+            <dt>Surgery</dt><dd>rebuild GGUF<br><span class="mono">layer_path.py</span></dd>
+            <dt>Throughput</dt><dd class="mono">~6.4 tps</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─── §1 THE HEADLINE: RIGIDITY ─────────────────────────────────── -->
+<section data-screen-label="01 Rigidity">
+  <h2><span class="num">§1</span>Robust to a cut, rigid under a structure</h2>
+  <div class="col-side">
+    <div>
+      <p class="dropcap">
+        Duplicate almost any single one of Gemma-31B's sixty layers, or delete
+        it, and the model barely flinches. The exceptions are structural and few:
+        the embedding-adjacent pair (L0–1), the final pair (L58–59), and a couple
+        of mid hinges (L35, L40) zero out completely. But across the entire
+        <em>interior</em> of both ladders, no single-layer surgery moves capability
+        outside the seed-noise envelope. Read alone, that reads as
+        <em>robustness</em>.
+      </p>
+      <p>
+        But robustness is the wrong word, and the blocks prove it. Chain a few
+        layers into a duplicated <em>block</em> and the model doesn't degrade
+        gracefully — it craters, and it craters <em>faster than the sum of its
+        parts would predict from averaging</em>. The damage isn't additive; the
+        layers interact. Each block wants its exact neighbours, in its exact
+        order. That isn't a robust stack. It's a <span class="hl-acc">rigid,
+        positionally specialised</span> one that happens to absorb a single
+        perturbation.
+      </p>
+      <p>
+        The contrast that makes this legible is <a href="granite.html">Granite</a>
+        and the small dense models before it — nanbeige especially, where you
+        could lift a layer out of one depth, drop it somewhere completely
+        different, and the model would sail straight through. Those layers were
+        <em>generalists</em>: position-independent, transplantable. Gemma-31B is
+        the opposite animal. A single layer survives being copied because the
+        residual stream routes around it; a block of layers cannot be copied
+        because you've changed the order the model is built on.
+      </p>
+      <p class="pull">
+        The negative result isn't "nothing happened." It's that this model is
+        held together by where its layers sit — and a sweep that only moves one
+        layer at a time can't see the glue.
+      </p>
+    </div>
+    <div class="aside">
+      <span class="kicker">Two robustnesses</span>
+      <p>
+        <b>Perturbation-robust</b> — capability is invariant to a single dup or
+        prune. Gemma-31B has this.
+      </p>
+      <p>
+        <b>Position-robust</b> — a layer keeps working after you <em>move</em> it.
+        nanbeige had this; Gemma-31B does <em>not</em>. The block dose-response
+        below is the measurement of its absence.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─── §2 THE WINNERS THAT AREN'T ────────────────────────────────── -->
+<section data-screen-label="02 Non-winners">
+  <h2><span class="num">§2</span>The winners that aren't</h2>
+  <p style="max-width:760px">
+    Three configs sit a little above baseline on strict math. The discipline of
+    this lab is to not believe them. The gauge that matters is <span class="mono">r</span>
+    — the standard deviation of the per-seed paired difference, divided by the
+    standard deviation of baseline's own seed noise. When <span class="mono">r&lt;1</span>,
+    pairing cancels common-mode noise and the effect is trustworthy. When
+    <span class="mono">r≈1</span>, the difference is just <em>more noise</em>, and
+    seeds won't save it.
+  </p>
+
+  <div class="tbl-wrap">
+  <table class="tbl">
+    <thead><tr>
+      <th class="label">config</th><th class="num">math strict</th><th class="num">Δ vs base</th>
+      <th class="num">d</th><th class="num">t</th><th class="num">r</th><th>verdict</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="label">baseline</td><td class="num">0.736</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="muted">12 seeds</td></tr>
+      <tr class="divider"><td class="label">dup_22</td><td class="num pos">0.806</td><td class="num">+0.069</td><td class="num">+0.51</td><td class="num">+1.8</td><td class="num">1.16</td><td class="game">noise floor · n=12</td></tr>
+      <tr><td class="label">prune_14</td><td class="num pos">0.792</td><td class="num">+0.073</td><td class="num">+0.83</td><td class="num">+2.3</td><td class="num">0.64</td><td class="game">above floor · n=8</td></tr>
+      <tr><td class="label">dup_9</td><td class="num pos">0.792</td><td class="num">+0.073</td><td class="num">+0.75</td><td class="num">+2.1</td><td class="num">0.71</td><td class="game">above floor · n=8</td></tr>
+      <tr><td class="label">prune_2_14</td><td class="num">0.781</td><td class="num">+0.062</td><td class="num">+0.37</td><td class="num">+1.0</td><td class="num">1.24</td><td class="game">noise floor · n=8</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="figcap" style="margin-top:0.9rem">
+    <b>Two configs clear the floor — at half budget.</b>
+    <span class="mono">prune_14</span> (r=0.64) and <span class="mono">dup_9</span>
+    (r=0.71) dip under 1 with d≈0.8, while the only <em>fully-seeded</em> leader,
+    <span class="mono">dup_22</span>, sits at r=1.16. But both sub-1 configs ran
+    just <b>n=8</b> seeds — the sweep was killed before their budget filled, and a
+    shallower seed count flatters r. Even at face value, t≈2.3 is inside the
+    look-elsewhere budget: ~176 configs × 3 channels ≈ 500 tests, ~25 false
+    positives at p&lt;0.05 expected by chance alone. And what actually sinks them is
+    <a href="#candidates">§7</a>: balanced across all three channels, the math gain
+    evaporates to net ≈ 0. There is no positive result on the math axis.
+    <span class="hl-acc">That is an honest answer, not a failed one.</span>
+  </p>
+</section>
+
+
+<!-- ─── §3 BLOCK DOSE-RESPONSE ────────────────────────────────────── -->
+<section data-screen-label="03 Dose-response">
+  <h2><span class="num">§3</span>Block damage: span × depth, floored</h2>
+  <p style="max-width:780px">
+    If single layers don't move the model, the obvious next question is whether a
+    <em>contiguous block</em> of "good" layers, duplicated together, surfaces a
+    reasoning circuit — the move that paid off on the dense E4B. It does not. It
+    only ever costs. And the cost has a clean law.
+  </p>
+
+  <div class="figure">
+    <svg viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">
+<rect x="58" y="24" width="245" height="290" fill="#00000008"/>
+<rect x="303" y="24" width="252" height="290" fill="#00000000"/>
+<rect x="555" y="24" width="245" height="290" fill="#00000008"/>
+<line x1="58" y1="314" x2="800" y2="314" stroke="#C7BDA9" stroke-width="1"/>
+<line x1="58" y1="62.9" x2="800" y2="62.9" stroke="#5C7A66" stroke-width="1.2" stroke-dasharray="5 4"/>
+<text x="800" y="58" font-size="10" fill="#5C7A66" text-anchor="end">baseline 0.74</text>
+<line x1="54" y1="314" x2="58" y2="314" stroke="#7C7466"/>
+<text x="50" y="317" font-size="9" fill="#7C7466" text-anchor="end">0.0</text>
+<line x1="54" y1="246" x2="58" y2="246" stroke="#7C7466"/>
+<text x="50" y="249" font-size="9" fill="#7C7466" text-anchor="end">0.2</text>
+<line x1="54" y1="178" x2="58" y2="178" stroke="#7C7466"/>
+<text x="50" y="181" font-size="9" fill="#7C7466" text-anchor="end">0.4</text>
+<line x1="54" y1="109" x2="58" y2="109" stroke="#7C7466"/>
+<text x="50" y="112" font-size="9" fill="#7C7466" text-anchor="end">0.6</text>
+<line x1="54" y1="41" x2="58" y2="41" stroke="#7C7466"/>
+<text x="50" y="44" font-size="9" fill="#7C7466" text-anchor="end">0.8</text>
+<line x1="121" y1="314" x2="121" y2="318" stroke="#7C7466"/>
+<line x1="196" y1="314" x2="196" y2="318" stroke="#7C7466"/>
+<line x1="272" y1="314" x2="272" y2="318" stroke="#7C7466"/>
+<line x1="347" y1="314" x2="347" y2="318" stroke="#7C7466"/>
+<line x1="423" y1="314" x2="423" y2="318" stroke="#7C7466"/>
+<line x1="498" y1="314" x2="498" y2="318" stroke="#7C7466"/>
+<line x1="574" y1="314" x2="574" y2="318" stroke="#7C7466"/>
+<line x1="649" y1="314" x2="649" y2="318" stroke="#7C7466"/>
+<line x1="725" y1="314" x2="725" y2="318" stroke="#7C7466"/>
+<line x1="800" y1="314" x2="800" y2="318" stroke="#7C7466"/>
+<text x="58" y="330" font-size="9" fill="#7C7466" text-anchor="middle">L0</text>
+<text x="310" y="330" font-size="9" fill="#7C7466" text-anchor="middle">L20</text>
+<text x="561" y="330" font-size="9" fill="#7C7466" text-anchor="middle">L40</text>
+<text x="800" y="330" font-size="9" fill="#7C7466" text-anchor="middle">L59</text>
+<text x="410" y="354" font-size="9.5" fill="#7C7466" text-anchor="middle" letter-spacing="0.1em">MEAN LAYER INDEX (depth) →</text>
+<circle cx="120.9" cy="92.2" r="2" fill="#C7BDA9"/>
+<circle cx="309.5" cy="137.7" r="2" fill="#C7BDA9"/>
+<circle cx="58.0" cy="314.0" r="2" fill="#C7BDA9"/>
+<circle cx="70.6" cy="314.0" r="2" fill="#C7BDA9"/>
+<circle cx="83.2" cy="149.1" r="2" fill="#C7BDA9"/>
+<circle cx="95.7" cy="115.0" r="2" fill="#C7BDA9"/>
+<circle cx="108.3" cy="143.4" r="2" fill="#C7BDA9"/>
+<circle cx="133.5" cy="160.5" r="2" fill="#C7BDA9"/>
+<circle cx="146.0" cy="75.2" r="2" fill="#C7BDA9"/>
+<circle cx="158.6" cy="97.9" r="2" fill="#C7BDA9"/>
+<circle cx="171.2" cy="43.9" r="2" fill="#C7BDA9"/>
+<circle cx="183.8" cy="86.5" r="2" fill="#C7BDA9"/>
+<circle cx="196.3" cy="137.7" r="2" fill="#C7BDA9"/>
+<circle cx="208.9" cy="154.8" r="2" fill="#C7BDA9"/>
+<circle cx="221.5" cy="109.3" r="2" fill="#C7BDA9"/>
+<circle cx="234.1" cy="92.2" r="2" fill="#C7BDA9"/>
+<circle cx="246.6" cy="92.2" r="2" fill="#C7BDA9"/>
+<circle cx="259.2" cy="143.4" r="2" fill="#C7BDA9"/>
+<circle cx="271.8" cy="115.0" r="2" fill="#C7BDA9"/>
+<circle cx="284.4" cy="177.5" r="2" fill="#C7BDA9"/>
+<circle cx="296.9" cy="177.5" r="2" fill="#C7BDA9"/>
+<circle cx="322.1" cy="86.5" r="2" fill="#C7BDA9"/>
+<circle cx="334.7" cy="39.2" r="2" fill="#C7BDA9"/>
+<circle cx="347.3" cy="200.3" r="2" fill="#C7BDA9"/>
+<circle cx="359.8" cy="171.8" r="2" fill="#C7BDA9"/>
+<circle cx="372.4" cy="149.1" r="2" fill="#C7BDA9"/>
+<circle cx="385.0" cy="183.2" r="2" fill="#C7BDA9"/>
+<circle cx="397.6" cy="228.7" r="2" fill="#C7BDA9"/>
+<circle cx="410.1" cy="257.1" r="2" fill="#C7BDA9"/>
+<circle cx="422.7" cy="166.2" r="2" fill="#C7BDA9"/>
+<circle cx="435.3" cy="279.9" r="2" fill="#C7BDA9"/>
+<circle cx="447.9" cy="211.6" r="2" fill="#C7BDA9"/>
+<circle cx="460.4" cy="200.3" r="2" fill="#C7BDA9"/>
+<circle cx="473.0" cy="279.9" r="2" fill="#C7BDA9"/>
+<circle cx="485.6" cy="228.7" r="2" fill="#C7BDA9"/>
+<circle cx="498.2" cy="314.0" r="2" fill="#C7BDA9"/>
+<circle cx="510.7" cy="223.0" r="2" fill="#C7BDA9"/>
+<circle cx="523.3" cy="211.6" r="2" fill="#C7BDA9"/>
+<circle cx="535.9" cy="296.9" r="2" fill="#C7BDA9"/>
+<circle cx="548.5" cy="296.9" r="2" fill="#C7BDA9"/>
+<circle cx="561.1" cy="314.0" r="2" fill="#C7BDA9"/>
+<circle cx="573.6" cy="268.5" r="2" fill="#C7BDA9"/>
+<circle cx="586.2" cy="171.8" r="2" fill="#C7BDA9"/>
+<circle cx="598.8" cy="132.0" r="2" fill="#C7BDA9"/>
+<circle cx="611.4" cy="97.9" r="2" fill="#C7BDA9"/>
+<circle cx="623.9" cy="132.0" r="2" fill="#C7BDA9"/>
+<circle cx="636.5" cy="103.6" r="2" fill="#C7BDA9"/>
+<circle cx="649.1" cy="160.5" r="2" fill="#C7BDA9"/>
+<circle cx="661.7" cy="149.1" r="2" fill="#C7BDA9"/>
+<circle cx="674.2" cy="166.2" r="2" fill="#C7BDA9"/>
+<circle cx="686.8" cy="132.0" r="2" fill="#C7BDA9"/>
+<circle cx="699.4" cy="160.5" r="2" fill="#C7BDA9"/>
+<circle cx="712.0" cy="308.3" r="2" fill="#C7BDA9"/>
+<circle cx="724.5" cy="154.8" r="2" fill="#C7BDA9"/>
+<circle cx="737.1" cy="149.1" r="2" fill="#C7BDA9"/>
+<circle cx="749.7" cy="200.3" r="2" fill="#C7BDA9"/>
+<circle cx="762.3" cy="120.7" r="2" fill="#C7BDA9"/>
+<circle cx="774.8" cy="251.5" r="2" fill="#C7BDA9"/>
+<circle cx="787.4" cy="314.0" r="2" fill="#C7BDA9"/>
+<circle cx="800.0" cy="314.0" r="2" fill="#C7BDA9"/>
+<circle cx="152.3" cy="103.6" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="158.6" cy="115.0" r="5.8" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="152.3" cy="183.2" r="6.9" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="158.6" cy="206.0" r="8.0" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="152.3" cy="234.4" r="9.1" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="309.5" cy="211.6" r="8.0" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="234.1" cy="257.1" r="8.0" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="89.4" cy="149.1" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="164.9" cy="92.2" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="227.8" cy="154.8" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="303.2" cy="194.6" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="378.7" cy="240.1" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="454.2" cy="279.9" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="529.6" cy="308.3" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="605.1" cy="149.1" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="680.5" cy="296.9" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="756.0" cy="279.9" r="4.7" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="95.7" cy="115.0" r="5.8" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="234.1" cy="120.7" r="5.8" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="385.0" cy="314.0" r="5.8" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="535.9" cy="314.0" r="5.8" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="686.8" cy="291.3" r="5.8" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="315.8" cy="166.2" r="6.9" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="322.1" cy="120.7" r="5.8" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="108.3" cy="177.5" r="8.0" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="183.8" cy="274.2" r="8.0" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="259.2" cy="188.9" r="8.0" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="196.3" cy="239.4" r="8.0" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="221.5" cy="292.7" r="8.0" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+<circle cx="196.3" cy="154.1" r="5.8" fill="#B85C3D" fill-opacity="0.5" stroke="#7A2E2E" stroke-width="0.8"/>
+    </svg>
+    <p class="figcap">
+      <b>Fig 1 — Block dup math-strict vs depth.</b> Faint dots = single-layer
+      dups (the "parts"), which hug baseline everywhere. Terracotta discs =
+      duplicated blocks, radius ∝ span (2→5+ layers). Two gradients are visible:
+      blocks fall as they get <b>bigger</b> (radius) and as they sit <b>deeper</b>
+      (rightward). A 3-layer block at L2–4 costs −0.15; the same 3 layers at
+      L37–39 hits the floor (0.000). Depth and span both bite; nothing recovers
+      baseline.
+    </p>
+  </div>
+
+  <div class="col-2">
+    <div>
+      <h3>Worse than the average, floored below the sum</h3>
+      <p>
+        Take a block's constituent single-layer dups and ask what the block
+        "should" score. Two predictions bracket it. The <em>average</em> of the
+        parts is the optimistic one — and blocks land far below it
+        (<span class="mono">blk_12_16</span>: actual −0.57 vs part-average −0.16).
+        Damage <span class="hl-neg">compounds</span> beyond averaging: the layers
+        interfere, they don't just add.
+      </p>
+      <p>
+        The <em>sum</em> of the parts is the pessimistic one — and blocks land
+        <em>above</em> it (<span class="mono">blk_2_6</span>: actual −0.34 vs
+        part-sum −1.01). That's not mercy; it's the floor. Strict score can't go
+        below zero, so once a block bottoms out, extra bad layers have nothing
+        left to subtract. Compounding, then saturation.
+      </p>
+    </div>
+    <div>
+      <h3>The combos say the same thing, quieter</h3>
+      <p>
+        Cross-depth combos (two single dups at different depths) are the gentlest
+        multi-layer move and the only ones that stay near baseline:
+        <span class="mono">combo_15_22</span> (+0.07, t=0.86),
+        <span class="mono">prune_2_14</span> (+0.06, t=1.29) — the one structurally
+        tidy config, holding mc and eq at baseline too. But none beats a single
+        dup, and the moment a combo spans a real interval it joins the cascade.
+      </p>
+      <p>
+        The intended payoff — the E4B trick of chaining near-baseline layers to
+        bracket a reasoning circuit — finds <span class="hl-acc">no circuit
+        here</span>. There is nothing to amplify; there is only structure to
+        damage. The deepest blocks take EQ to 0.00 outright: not wrong answers,
+        generation-mode collapse.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─── §4 SEED NOISE MAP ─────────────────────────────────────────── -->
+<section data-screen-label="04 Noise map" id="noise-map">
+  <h2><span class="num">§4</span>The noise lives at the front</h2>
+  <p style="max-width:780px">
+    A prediction we made early — and held too firmly — from the very first
+    geometry scan, where the late layers rewrite the hidden state by far the
+    hardest: later layers <em>should</em> be the fragile ones, noisier and less
+    trustworthy under surgery. On Gemma-31B's behaviour, that is simply false, and
+    the full ladder says so in both directions. The scan wasn't wrong. We read
+    magnitude as fragility — see the walkback below.
+  </p>
+
+  <div class="figure">
+    <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">
+<rect x="50" y="30" width="249" height="230" fill="#00000008"/>
+<rect x="555" y="30" width="249" height="230" fill="#00000008"/>
+<line x1="50" y1="175.9" x2="804" y2="175.9" stroke="#7C7466" stroke-width="1" stroke-dasharray="4 4"/>
+<text x="804" y="172" font-size="9" fill="#7C7466" text-anchor="end">baseline noise 0.12</text>
+<text x="42" y="263" font-size="9" fill="#7C7466" text-anchor="end">0.0</text>
+<line x1="46" y1="260" x2="50" y2="260" stroke="#7C7466"/>
+<text x="42" y="191" font-size="9" fill="#7C7466" text-anchor="end">0.1</text>
+<line x1="46" y1="188" x2="50" y2="188" stroke="#7C7466"/>
+<text x="42" y="119" font-size="9" fill="#7C7466" text-anchor="end">0.2</text>
+<line x1="46" y1="116" x2="50" y2="116" stroke="#7C7466"/>
+<text x="42" y="47" font-size="9" fill="#7C7466" text-anchor="end">0.3</text>
+<line x1="46" y1="44" x2="50" y2="44" stroke="#7C7466"/>
+<path d="M 75.6 126.6 L 88.3 78.3 L 101.1 134.4 L 113.9 80.7 L 126.7 115.3 L 139.5 57.4 L 152.2 155.6 L 165.0 147.9 L 177.8 167.2 L 190.6 97.5 L 203.4 142.6 L 216.1 69.1 L 228.9 102.0 L 241.7 164.2 L 254.5 159.8 L 267.3 184.2 L 280.0 164.2 L 292.8 157.0 L 305.6 236.0 L 318.4 94.9 L 331.2 189.4 L 343.9 159.8 L 356.7 175.3 L 369.5 201.3 L 382.3 125.5 L 395.1 159.8 L 407.8 206.4 L 420.6 215.2 L 433.4 236.0 L 446.2 212.1 L 458.9 194.4 L 471.7 201.3 L 484.5 159.8 L 510.1 190.2 L 522.8 178.8 L 535.6 230.7 L 548.4 230.7 L 574.0 198.9 L 586.7 206.4 L 599.5 120.3 L 612.3 212.1 L 625.1 92.3 L 637.9 115.3 L 650.6 198.9 L 663.4 143.9 L 676.2 236.0 L 689.0 212.1 L 701.8 88.1 L 714.5 236.0 L 727.3 88.1 L 740.1 164.2 L 752.9 118.3 L 765.7 102.0 L 778.4 215.2" fill="none" stroke="#B85C3D" stroke-width="1.4" stroke-opacity="0.9"/>
+<path d="M 75.6 132.1 L 88.3 110.4 L 101.1 61.7 L 113.9 162.7 L 126.7 120.3 L 139.5 88.1 L 152.2 159.8 L 165.0 132.1 L 177.8 115.3 L 190.6 115.3 L 203.4 162.7 L 216.1 164.2 L 228.9 180.8 L 241.7 180.5 L 254.5 155.6 L 267.3 157.0 L 280.0 72.9 L 292.8 50.5 L 305.6 102.0 L 318.4 137.8 L 343.9 198.9 L 356.7 155.6 L 369.5 175.3 L 382.3 180.5 L 395.1 201.3 L 407.8 188.1 L 420.6 212.1 L 433.4 198.9 L 446.2 140.2 L 458.9 180.5 L 471.7 157.0 L 484.5 180.5 L 497.3 162.7 L 510.1 164.2 L 522.8 236.0 L 535.6 142.6 L 548.4 236.0 L 561.2 236.0 L 586.7 230.7 L 599.5 198.9 L 612.3 180.5 L 625.1 198.9 L 637.9 178.8 L 650.6 99.3 L 663.4 157.0 L 676.2 125.5 L 689.0 132.1 L 701.8 76.8 L 714.5 84.8 L 740.1 125.5 L 752.9 167.2 L 765.7 140.2 L 778.4 103.8 L 791.2 212.1" fill="none" stroke="#2F3F52" stroke-width="1.4" stroke-opacity="0.9"/>
+<text x="50" y="276" font-size="9" fill="#7C7466" text-anchor="middle">L0</text>
+<text x="306" y="276" font-size="9" fill="#7C7466" text-anchor="middle">L20</text>
+<text x="561" y="276" font-size="9" fill="#7C7466" text-anchor="middle">L40</text>
+<text x="804" y="276" font-size="9" fill="#7C7466" text-anchor="middle">L59</text>
+<text x="178" y="22" font-size="9" fill="#7C7466" text-anchor="middle" letter-spacing="0.1em">FRONT (noisiest)</text>
+<text x="433" y="22" font-size="9" fill="#7C7466" text-anchor="middle" letter-spacing="0.1em">MID (calmest)</text>
+<text x="689" y="22" font-size="9" fill="#7C7466" text-anchor="middle" letter-spacing="0.1em">LATE</text>
+<text x="638" y="109" font-size="9" fill="#B85C3D">dup</text>
+<text x="715" y="97" font-size="9" fill="#2F3F52">prune</text>
+    </svg>
+    <p class="figcap">
+      <b>Fig 2 — Per-layer seed noise (std of per-seed math means), L0–59.</b>
+      Terracotta = dup ladder, slate = prune ladder; dead/bricked configs
+      (zero-variance constant garbage) excluded so they don't masquerade as
+      "stable." Both ladders agree: the <b>front third is the noisiest</b>, the
+      mid stack is calmest, the late third sits in between — the opposite of the
+      quant-noise prediction.
+    </p>
+  </div>
+
+  <div class="col-side">
+    <div>
+      <p>
+        Zone-averaged over both ladders: front L0–19 = <b>0.165</b>, mid L20–39 =
+        <b>0.105</b>, late L40–59 = <b>0.120</b>. The noisiest individual configs
+        are all up front — <span class="mono">prune_19</span> 0.29,
+        <span class="mono">dup_7</span> 0.28, <span class="mono">prune_4</span> 0.28.
+        The prediction that duplicating a heavily-quantised late layer would
+        propagate 2-bit noise is firmly refuted: late targets are <em>quieter</em>,
+        on both surgery types.
+      </p>
+      <p>
+        The reconciliation is a distinction worth keeping: <span class="hl-acc">magnitude
+        of change is not sensitivity to change</span>. The late layers genuinely
+        rewrite the hidden-state geometry the hardest (the scan-delta measurement,
+        Fig 3) — but that's deterministic output-shaping, the detokenisation
+        regime a logit lens predicts, not noise-amplifying computation. The front
+        layers carry the computational load; a late perturbation washes out before
+        it reaches the logits. The two axes decouple with depth. Late layers are
+        absent from the leaderboards not because noise buries their signal, but
+        because their effect is null — or they brick.
+      </p>
+    </div>
+    <div class="aside">
+      <span class="kicker">What is back-loaded</span>
+      <p>
+        <b>Bricks</b>, not noise. The global-grid catastrophics
+        (<span class="mono">dup_0/1</span>, late globals) skew slightly toward the
+        back — but a brick is zero-variance constant garbage, categorically
+        different from seed scatter. Degeneracy ≠ instability.
+      </p>
+    </div>
+  </div>
+
+  <div class="figure" style="margin-top:1.8rem">
+    <svg viewBox="0 0 850 290" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace">
+<rect x="58" y="30" width="236" height="220" fill="#00000008"/>
+<rect x="556" y="30" width="236" height="220" fill="#00000008"/>
+<text x="50" y="253" font-size="9" fill="#7A2E2E" text-anchor="end">0.00</text>
+<line x1="54" y1="250" x2="58" y2="250" stroke="#7A2E2E"/>
+<text x="50" y="143" font-size="9" fill="#7A2E2E" text-anchor="end">0.35</text>
+<line x1="54" y1="140" x2="58" y2="140" stroke="#7A2E2E"/>
+<text x="50" y="33" font-size="9" fill="#7A2E2E" text-anchor="end">0.70</text>
+<line x1="54" y1="30" x2="58" y2="30" stroke="#7A2E2E"/>
+<text x="800" y="253" font-size="9" fill="#B85C3D" text-anchor="start">0.00</text>
+<line x1="792" y1="250" x2="796" y2="250" stroke="#B85C3D"/>
+<text x="800" y="143" font-size="9" fill="#B85C3D" text-anchor="start">0.15</text>
+<line x1="792" y1="140" x2="796" y2="140" stroke="#B85C3D"/>
+<text x="800" y="33" font-size="9" fill="#B85C3D" text-anchor="start">0.30</text>
+<line x1="792" y1="30" x2="796" y2="30" stroke="#B85C3D"/>
+<path d="M 58.0 30.0 L 70.4 30.0 L 82.9 225.8 L 95.3 188.0 L 107.8 228.9 L 120.2 145.4 L 132.6 173.0 L 145.1 178.6 L 157.5 220.1 L 170.0 221.9 L 182.4 215.5 L 194.8 210.7 L 207.3 201.3 L 219.7 236.7 L 232.2 238.8 L 244.6 207.0 L 257.1 232.0 L 269.5 219.2 L 281.9 231.3 L 294.4 222.3 L 306.8 228.7 L 319.3 231.9 L 331.7 223.3 L 344.1 173.8 L 356.6 197.5 L 369.0 186.3 L 381.5 169.2 L 393.9 158.4 L 406.3 133.6 L 418.8 138.3 L 431.2 158.9 L 443.7 154.7 L 456.1 161.3 L 468.5 168.5 L 481.0 158.3 L 493.4 116.2 L 505.9 136.0 L 518.3 134.9 L 530.7 123.4 L 543.2 78.1 L 555.6 45.8 L 568.1 30.0 L 580.5 50.1 L 592.9 76.3 L 605.4 91.2 L 617.8 105.0 L 630.3 115.9 L 642.7 106.9 L 655.2 108.7 L 667.6 103.3 L 680.0 95.7 L 692.5 107.8 L 704.9 58.4 L 717.4 80.6 L 729.8 110.3 L 742.2 92.3 L 754.7 84.3 L 767.1 53.4 L 779.6 30.0 L 792.0 30.0" fill="none" stroke="#7A2E2E" stroke-width="2.2" stroke-opacity="0.95"/>
+<path d="M 82.9 116.7 L 95.3 81.0 L 107.8 84.7 L 120.2 108.9 L 132.6 104.9 L 145.1 58.9 L 157.5 145.6 L 170.0 127.6 L 182.4 128.8 L 194.8 93.3 L 207.3 140.5 L 219.7 103.7 L 232.2 129.0 L 244.6 160.6 L 257.1 145.6 L 269.5 158.8 L 281.9 105.7 L 294.4 90.5 L 306.8 157.2 L 319.3 103.4 L 331.7 178.0 L 344.1 167.7 L 356.6 153.5 L 369.0 176.8 L 381.5 140.9 L 393.9 168.9 L 406.3 186.0 L 418.8 202.7 L 431.2 206.6 L 443.7 164.4 L 456.1 176.0 L 468.5 167.5 L 481.0 158.3 L 493.4 150.7 L 505.9 165.5 L 518.3 196.3 L 530.7 175.2 L 543.2 222.8 L 555.6 225.6 L 568.1 187.7 L 580.5 207.7 L 592.9 147.6 L 605.4 185.0 L 617.8 133.3 L 630.3 134.7 L 642.7 136.9 L 655.2 138.2 L 667.6 169.2 L 680.0 160.3 L 692.5 68.8 L 704.9 148.4 L 717.4 74.6 L 729.8 132.5 L 742.2 130.4 L 754.7 108.3 L 767.1 147.5 L 779.6 201.1" fill="none" stroke="#B85C3D" stroke-width="2.2" stroke-opacity="0.95"/>
+<text x="58" y="40" font-size="8" fill="#7A2E2E" text-anchor="start">↑ 1.5</text>
+<text x="792" y="40" font-size="8" fill="#7A2E2E" text-anchor="end">↑ 13.5</text>
+<text x="58" y="270" font-size="9" fill="#7C7466" text-anchor="middle">L0</text>
+<text x="307" y="270" font-size="9" fill="#7C7466" text-anchor="middle">L20</text>
+<text x="556" y="270" font-size="9" fill="#7C7466" text-anchor="middle">L40</text>
+<text x="792" y="270" font-size="9" fill="#7C7466" text-anchor="middle">L59</text>
+<text x="170" y="22" font-size="9" fill="#7C7466" text-anchor="middle" letter-spacing="0.1em">FRONT</text>
+<text x="431" y="22" font-size="9" fill="#7C7466" text-anchor="middle" letter-spacing="0.1em">MID</text>
+<text x="680" y="22" font-size="9" fill="#7C7466" text-anchor="middle" letter-spacing="0.1em">LATE</text>
+<text x="705" y="51" font-size="9" fill="#7A2E2E" text-anchor="middle">geometry — Δ/residual (left)</text>
+<text x="182" y="145" font-size="9" fill="#B85C3D" text-anchor="middle">behaviour — seed-noise (right)</text>
+    </svg>
+    <p class="figcap">
+      <b>Fig 3 — Geometry change vs behavioural noise, by depth.</b> Wine =
+      per-layer Δ/residual ratio (how hard each layer rewrites the stream,
+      2-bit scan-delta; boundary layers L0 &amp; L59 spike off-scale to 1.5 and
+      13.5). Terracotta = per-layer seed-noise (Fig 2, right axis). <b>Opposite
+      slopes.</b> The geometry rewrites hardest exactly where surgery does the
+      <em>least</em> behavioural damage. Magnitude of change is not sensitivity
+      to change.
+    </p>
+  </div>
+
+  <div class="walkback" style="margin-top:1.6rem">
+    <span class="status-badge">walkback</span>
+    <p>
+      <b>We expected the late layers to be the fragile ones.</b> The very first
+      thing we ran on this model was a 2-bit hidden-state scan, and it showed the
+      deep layers rewriting the residual stream far harder than the front. We read
+      that as <em>fragility</em> — "duplicate a heavily-quantised late layer and
+      its 2-bit noise will propagate" — and the assumption quietly coloured how we
+      read everything after. Then the full dup <em>and</em> prune ladders came in
+      and said the opposite: the front is the noisy zone, the late stack is calm.
+      The scan was never wrong. We had mistaken the <em>amount</em> a layer changes
+      the stream for how <em>sensitive</em> the output is to changing that layer —
+      and those are different measurements. The late layers move the stream a lot
+      because that's where token-shaping happens; perturbing that shaping is
+      deterministic, not noisy. Naming the prior is the point: it's the kind of
+      assumption that survives precisely because it sounds mechanistic.
+    </p>
+  </div>
+</section>
+
+
+<!-- ─── §5 STRICT VS PARTIAL ──────────────────────────────────────── -->
+<section data-screen-label="05 Grader">
+  <h2><span class="num">§5</span>What the partial grader compresses</h2>
+  <div class="col-side">
+    <div>
+      <p class="dropcap">
+        Every page in this lab carries a warning about partial-credit math
+        grading — David Ng's elegant pad-and-relative-difference scorer, which
+        rewards an answer for being <em>close in magnitude</em>. On the
+        <a href="gemma.html#moe">26B MoE</a> it manufactured a fake <em>winner</em>:
+        a config that gamed magnitude rocketed up the partial leaderboard while
+        strict saw nothing. The lesson there was rank-inversion.
+      </p>
+      <p>
+        On 31B the grader misbehaves differently, and more quietly. Strict and
+        partial correlate at <span class="mono">r=0.85</span> — no rank-inversion
+        this time. But partial sits a flat <span class="mono">+0.36</span> above
+        strict and <span class="hl-acc">saturates</span>: baseline already scores
+        0.96 partial, and nearly every config piles up between 0.92 and 1.0.
+        Partial can't tell the top configs apart — they're all ceilinged. It only
+        moves when a block craters hard enough to stop emitting plausible numbers
+        at all.
+      </p>
+      <p>
+        So the failure mode flips: on the MoE, partial <em>lied about the
+        ordering</em>; on 31B, partial <em>erases the ordering</em> at the top.
+        Either way the conclusion is identical — <span class="hl-acc">strict is
+        the only axis you may headline.</span> The any-match strict grader
+        (correct integer present anywhere in the output, operands filtered) is
+        position-robust by construction, so a strict zero is a genuine miss, not a
+        formatting artifact.
+      </p>
+    </div>
+    <div class="aside">
+      <span class="kicker">Specimen: partial pays for garbage</span>
+      <div class="specimen weird" style="margin-top:0.6rem">
+        <div class="head"><span class="lid">baseline · math_add</span><span class="t">strict 0 · partial 0.53</span></div>
+        <div class="quote"> 111111111111111</div>
+        <div class="gloss">A degenerate repetition. The exact answer never
+        appears — strict zero. But the digit pattern is "magnitude-plausible," so
+        partial pays out half credit. This is the same leniency, in miniature,
+        that the 26B exploited wholesale.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─── §6 SCOPE / CAVEATS ────────────────────────────────────────── -->
+<section data-screen-label="06 Scope" id="scope">
+  <h2><span class="num">§6</span>What this negative does — and doesn't — cover</h2>
+  <p style="max-width:780px">
+    The honest scope of the result is narrower than "RYS does nothing to Gemma."
+    Three boundaries matter, and naming them is what separates a clean negative
+    from an overclaim.
+  </p>
+
+  <div class="col-2" style="margin-top:1.6rem">
+    <div>
+      <h3>We may be testing the wrong organ</h3>
+      <p>
+        Gemma-4 is, by reputation, a conversational and creative-writing model —
+        the warm GPT-4o register, not a math engine. Our battery is arithmetic,
+        factual recall, and formal logic. If the layers that are <em>worth</em>
+        duplicating are creative-writing circuits, a math/logic sweep would see
+        exactly this null. There is no cheap objective grader for "complete the
+        simile" — so the creative axis stays untested, and the result is
+        <span class="hl-acc">scoped to reasoning/recall</span>, not universal.
+      </p>
+      <p>
+        The closest probe we have to that native register is
+        <span class="mono">eq-sketch</span> — open-ended equation completion. We
+        kept it at three seeds and <em>chose not to deepen it</em>: it's the most
+        expensive channel to run and the most stable, so extra seeds buy almost no
+        variance reduction. The budget went to finishing the sweep instead. And the
+        right way to reach the creative axis isn't more eq on a 2-bit 31B — it's the
+        sibling <span class="mono">Gemma-4-12B</span>: same family, near-identical
+        block structure, small enough to run at a real quant. Findings here should
+        carry over, and the muzzle lifts. <span class="muted">That's the next
+        target, not a deeper 31B re-run.</span>
+      </p>
+    </div>
+    <div id="muzzle">
+      <h3>The base + no-CoT muzzle</h3>
+      <p>
+        We test the <em>base</em> checkpoint in no-chain-of-thought, base-completion
+        mode — answer in a handful of tokens, no room to think. That is
+        deliberate (the instruction-tuned model fights the format; base blurts a
+        number), but it drags the model out of its native zone and pins the strict
+        ceiling. <span class="muted">Pending control: confirm the ceiling is the
+        muzzle by letting base reason (CoT) and by running a winner on the IT
+        model with room to respond.</span> The verdict shouldn't change; the
+        framing earns its evidence.
+      </p>
+    </div>
+  </div>
+
+  <div class="marginalia" style="margin-top:2.4rem">
+    <div class="label">Caveat — the quant ceiling, and the one experiment that lifts it</div>
+    <div class="body">
+      <p>
+        Everything here runs at <span class="mono">IQ2_M</span> — the quality
+        floor that a 16&nbsp;GB RAM ceiling forces. The geometry scans show 2-bit
+        heavily reshaping the deep-layer hidden
+        state (<a href="#noise-map">Fig 3</a>), so a late-layer <em>positive</em>
+        could in principle hide under the quant ceiling (the behavioural noise map
+        argues against it — see the §4 walkback — but can't prove a negative). The standard fix — sweep the same model at 4-bit —
+        doesn't fit the hardware.
+      </p>
+      <p>
+        <span class="wbhead">The hardware-bounded version that does fit:</span>
+        build a <em>mixed-precision</em> GGUF — bump only the RYS-target and
+        late layers to Q4/Q5 while the rest stays IQ2 — and re-sweep just those.
+        It isolates "is the late-layer null a quant artifact" without ever loading
+        a full 4-bit 31B. That is the concrete replication path, and it's the
+        right next experiment for anyone who wants to push past the consumer
+        floor.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─── §7 CANDIDATES ─────────────────────────────────────────────── -->
+<section data-screen-label="07 Candidates">
+  <h2><span class="num">§7</span>Preliminary candidates</h2>
+  <p style="max-width:760px">
+    With no statistically defensible winner, these are offered as
+    <em>preliminary</em> — the configs that sat highest on strict math, for others
+    with more hardware to confirm or refute. Treat them as "try these," not "use
+    these."
+  </p>
+  <div class="archetypes">
+    <div class="arch-card highlight">
+      <div class="arch-tag">highest strict</div>
+      <div class="arch-title">dup_22</div>
+      <div class="arch-blurb">Duplicate L22, the front-zone math layer. Best strict math (0.806) and the only fully-seeded leader — but at n=12 it sits at r=1.16, dead on the noise floor. Believe it only on replication.</div>
+      <div class="arch-winners">
+        <div class="arch-row"><span class="arch-cfg">math</span><span class="arch-stat">0.806 · <b>+0.07</b></span></div>
+        <div class="arch-row arch-substats">d +0.51 <span class="dot">·</span> t +1.8 <span class="dot">·</span> r 1.16 <span class="dot">·</span> n=12</div>
+      </div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-tag">sub-1 r · n=8</div>
+      <div class="arch-title">prune_14</div>
+      <div class="arch-blurb">Delete L14 — a lonely skippable layer (its neighbours hurt, its dup hurts). Pairing cancels noise here (r=0.64, d=0.83) — but on only 8 seeds before the kill, and still inside the multiplicity budget.</div>
+      <div class="arch-winners">
+        <div class="arch-row"><span class="arch-cfg">math</span><span class="arch-stat">0.792 · <b>+0.07</b></span></div>
+        <div class="arch-row arch-substats">d +0.83 <span class="dot">·</span> t +2.3 <span class="dot">·</span> r 0.64 <span class="dot">·</span> n=8</div>
+      </div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-tag">front dup</div>
+      <div class="arch-title">dup_9</div>
+      <div class="arch-blurb">Duplicate L9, in the productive front band. Ties prune_14 on strict (r=0.71, d=0.75, n=8). The third corner of the non-winner cluster.</div>
+      <div class="arch-winners">
+        <div class="arch-row"><span class="arch-cfg">math</span><span class="arch-stat">0.792 · <b>+0.07</b></span></div>
+        <div class="arch-row arch-substats">d +0.75 <span class="dot">·</span> t +2.1 <span class="dot">·</span> r 0.71 <span class="dot">·</span> n=8</div>
+      </div>
+    </div>
+  </div>
+  <p class="figcap" style="margin-top:1.1rem;max-width:760px">
+    <b>And the cross-channel aggregate doesn't endorse them either.</b> The strict-math
+    gain is the <em>only</em> place these configs win. Balance all three channels
+    equally and it evaporates: dup_22 <b>−0.037</b>, prune_14 <b>+0.006</b>, dup_9
+    <b>−0.002</b> — net zero to negative. The math bump is paid for on eq-sketch and
+    MC. (eq-sketch ran only <b>n=3</b> seeds — a <em>deliberate</em> budget call, not a
+    truncation: it's the most expensive channel and the most stable, so extra seeds
+    buy almost nothing. The negative eq Δ is therefore the <em>trustworthy</em> part;
+    only its Cohen's d is wide at n=3.) These aren't suppressed
+    winners; they're noise-floor configs with one flattering channel.
+  </p>
+  <p class="figcap">
+    Publishing these inherits <b>Google's Gemma Terms of Use</b>, not Apache —
+    the license, "Gemma" attribution, and use-restrictions travel with any
+    derivative. Credit chain: Google (Gemma) → David Ng (RYS technique) → this lab.
+  </p>
+</section>
+
+
+<!-- ─── §8 NOTES ──────────────────────────────────────────────────── -->
+<section data-screen-label="08 Notes">
+  <h2><span class="num">§8</span>Notes from the rig</h2>
+  <ul class="walkback">
+    <li><span class="wbhead">Sliding vs global is not a behavioural distinction here.</span> Every probe runs well under the sliding-window length, so a sliding layer attends to the entire sequence — the attention math is identical to a global layer's. The catastrophes at the global grid (L5,11,…) are <em>structural</em> — the V=K tie of <span class="mono">use_alt</span> attention and the per-layer-array reindex (<span class="mono">sliding_window_pattern</span>, <span class="mono">head_count_kv</span>) — not a receptive-field effect. The boundaries matter for tensor shape, not for what the layer can see.</li>
+    <li><span class="wbhead">Seeds, per channel.</span> 12 for math/mc baseline, 8 for the slow eq channel; 8–12 for candidate configs. Paired-difference stats match seeds on the intersection, so a config is only as deep as its shallower half — the baseline was deepened in lockstep so the pairing never wastes a seed.</li>
+    <li><span class="wbhead">Base-vs-IT is settled at the substrate level.</span> Base is the right RYS substrate: the IT model restates the equation or hedges before answering, base blurts a number first; base out-scores IT on eq and mc once priming lands. The dramatic base-vs-IT <em>geometry</em> difference decomposed to quant (3→2-bit), not tuning. What remains pending is carrying a winner onto IT with room to respond.</li>
+    <li><span class="wbhead">The receipt.</span> ~32 GPU-hours, ~34k probe-cells (reruns from growing the battery included), ~418k generated tokens, ≈1 kWh. GGUF is mmap-read, so disk writes are near-zero apart from results JSONL and the swap the deepest block-dups dragged through. A load of laundry's worth of electricity to prove a model is stubborn.</li>
+  </ul>
+
+  <div class="rule" style="margin-top:3rem"></div>
+  <p class="small muted">
+    Scripts: <span class="mono">gemma_31b_v2_probe_test.py</span> ·
+    <span class="mono">shared/probes_combined_v2.py</span> (any-match math + primed eq + balanced mc) ·
+    <span class="mono">gemma_fix_per_layer_arrays_31b.py</span> (SWP + head_count_kv reindex) ·
+    <span class="mono">monitor.py --sweep 31b_v2</span>.
+    Data: <span class="mono">gemma_31b_v2_base_results.jsonl</span> (per-cell, 176 configs × per-channel seeds).
+    Sister specimens: <a href="gemma.html">Gemma 4 E4B / 26B — a surgical record</a> ·
+    <a href="granite.html">Granite</a> · geometry in the <a href="geometry.html">appendix</a>.
+  </p>
+</section>
+
+</main>
+<script src="assets/lab.js"></script>
+</body>
+</html>
