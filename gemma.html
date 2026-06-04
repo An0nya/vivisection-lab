@@ -1113,7 +1113,7 @@ details[open] > .geo-summary::before { transform: rotate(90deg); }
 </style>
 </head>
 <body class="dark">
-<nav style="position:sticky;top:0;z-index:60;display:flex;align-items:baseline;gap:22px;padding:12px 56px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;"><a href="index.html" style="color:var(--ink);font-weight:600;text-decoration:none;letter-spacing:0.14em;">THE VIVISECTION LAB</a><a href="gemma.html" style="color:var(--terracotta);text-decoration:none;">Gemma&nbsp;4</a><a href="gemma31b.html" style="color:var(--muted);text-decoration:none;">Gemma&nbsp;31B</a><a href="granite.html" style="color:var(--muted);text-decoration:none;">Granite</a><a href="hrm.html" style="color:var(--muted);text-decoration:none;">HRM</a><a href="geometry.html" style="color:var(--muted);text-decoration:none;">Geometry</a></nav>
+<nav style="position:sticky;top:0;z-index:60;display:flex;align-items:baseline;gap:22px;padding:12px 56px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:0.08em;text-transform:uppercase;"><a href="index.html" style="color:var(--ink);font-weight:600;text-decoration:none;letter-spacing:0.14em;">THE VIVISECTION LAB</a><a href="gemma.html" style="color:var(--terracotta);text-decoration:none;">Gemma&nbsp;4</a><a href="gemma31b.html" style="color:var(--muted);text-decoration:none;">Gemma&nbsp;31B</a><a href="granite.html" style="color:var(--muted);text-decoration:none;">Granite</a><a href="hrm.html" style="color:var(--muted);text-decoration:none;">HRM</a><a href="geometry.html" style="color:var(--muted);text-decoration:none;">Geometry</a><a href="methods.html" style="color:var(--muted);text-decoration:none;">Methods</a></nav>
 <main>
 
 <!-- ─── HERO ───────────────────────────────────────────────────────── -->
@@ -3023,14 +3023,7 @@ FAIL: server did not start within 180s</div>
 <section data-screen-label="11 Method &amp; refs">
   <div class="refs">
     <p><strong>Method.</strong> Gemma-4-E4B-it, IQ4_XS quantization, llama.cpp. Layer surgery via the <span class="mono">layer_path.py</span> + per-layer-array reindexer (SWP, PLE token-embd, PLE model-proj). 16 hard-math probes, 15 seeds at temperature 0.3, base completion (no chat template, no system prompt). Paired-t against in-run baseline. Strict regrade: exact-equality + order-of-magnitude graders, on the verbose responses preserved from the original sweep.</p>
-    <p style="margin-top:1rem"><strong>References.</strong></p>
-    <ol>
-      <li>David Ng (dnhkng). <em>RYS &amp; RYS-II</em>, sapir-whorf and rys posts on dnhkng.github.io — the original "Repeat Your Self" technique. Stalled publicly on Gemma 4 31B over the per-layer-array problem; the reindexer here solves that case.</li>
-      <li>Maarten Grootendorst. <em>A Visual Guide to Gemma 4.</em> The shared-KV routing and global/sliding pattern aren't documented in Google's model card; this guide is the reference.</li>
-      <li>Google. <em>google/gemma-4-E4B</em> on HuggingFace. The architecture in question.</li>
-      <li>HF transformers <span class="mono">modeling_gemma4.py</span> lines 1183–1188 — the actual routing rule for shared_kv_states, read by hand to identify the two sole anchors.</li>
-      <li>alainnothere. <em>llm-circuit-finder</em>, <a href="https://github.com/alainnothere/llm-circuit-finder">github.com/alainnothere/llm-circuit-finder</a>. Independent RYS replication on Devstral-24B and Qwen2.5-32B; same <span class="mono">layer_path.py</span> primitive, different models, sharp circuit boundaries — including a +245% BBH-Logical-Deduction lift from a 3-layer duplication at L12–14. Useful proof that the boundaries-are-sharp finding generalizes off the Gemma-4 family.</li>
-    </ol>
+    <p style="margin-top:1rem"><strong>References.</strong> The full bibliography — Ng's RYS posts, Grootendorst's <em>Visual Guide to Gemma&nbsp;4</em>, the <span class="mono">modeling_gemma4.py</span> shared-KV routing source, and the alainnothere cross-model replication (Devstral-24B / Qwen2.5-32B, +245% BBH-Logical-Deduction from a 3-layer dup at L12–14) — lives on the <a href="methods.html#references">shared methods&nbsp;page</a>.</p>
 
     <div class="marginalia" style="margin-top: 2.6rem;">
       <div class="label">Hands on</div>

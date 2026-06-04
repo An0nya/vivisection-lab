@@ -823,3 +823,24 @@ details[open] > .geo-summary::before { transform: rotate(90deg); }
 .figure .raster img { display: block; width: 100%; height: auto; }
 .figure .raster.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 700px) { .figure .raster.two { grid-template-columns: 1fr; } }
+
+/* ── Methods spine: glossary + reference list (methods.html) ── */
+.glossary { margin: 1.8rem 0 0; max-width: 860px; }
+.glossary dt {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 17px; font-weight: 600; color: var(--ink);
+  margin-top: 1.5rem; padding-bottom: 2px;
+  border-bottom: 1px solid var(--rule);
+}
+.glossary dt:first-child { margin-top: 0; }
+.glossary dd {
+  margin: 0.5rem 0 0; padding: 0;
+  color: var(--ink-2); font-size: 15px; line-height: 1.62;
+}
+.glossary dd .mono { color: var(--ink); }
+.refs-list { font-size: 14px; color: var(--ink-2); line-height: 1.55; padding-left: 1.4em; max-width: 860px; }
+.refs-list li { margin: 0.85em 0; }
+.refs-list a { color: var(--terracotta); text-decoration: none; border-bottom: 1px dotted var(--terracotta); }
+.refs-list a:hover { color: var(--wine); border-bottom-color: var(--wine); }
+body.dark .refs-list a { border-bottom-color: var(--terracotta); }
+@media (max-width: 700px) { .glossary dt { font-size: 16px; } }
